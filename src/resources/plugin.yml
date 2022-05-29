@@ -1,0 +1,6 @@
+name: Kasumi
+main: gl.ky.kasumi.Main
+version: 1.0.0
+author: kouyoux
+description: use chinese to make nice effect
+load: STARTUP
