@@ -30,7 +30,7 @@ class AstEvaluator {
     }
 
     fun execute(s: AstNode.Action, env: Environment) {
-        s.exprs.forEach { t, u -> env[t] = u  }
+        s.captured.forEach { t, u -> env[t] = u  }
         handlerPool[s.handler]!!.invoke(env)
     }
 }

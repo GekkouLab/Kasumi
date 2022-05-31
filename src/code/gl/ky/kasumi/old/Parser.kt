@@ -8,17 +8,14 @@ import gl.ky.kasumi.old.TokenStreamUtil.skipType
 
 fun main() {
     val rules = Rule.fromStrings(
-        "把 <name:string> {设为} <value:any>",
-        "{设置} <name:string> 为 <value:any>",
-        "在 <target:position> {释放粒子} <name:string>",
-        "{释放粒子} <name:string>",
-        "在 <target:player> 处"
+        "{给} <target:player>", "{向} <target:player>", "{跟} <target:player>", "{把} <target:player>",
+        "{发送消息} <msg:string>", "{杀死}", "{增加金币} <amount:number>", "{并}", "{元}"
     )
     println(rules)
     val script = """
         脚本组 示例脚本 {
-            设置“一个变量”为 1，在{KouyouX}处，释放粒子“水花”
-            在[0,1,2]释放粒子“火焰”
+            发送消息"操你妈"给{akkkumo}并 杀死
+            向{citri}增加金币 10000元
         }
     """.trimIndent()
     val ts = Lexer(script).get()
@@ -133,13 +130,16 @@ class Parser(val input: TokenStream, val rules: List<Rule>) {
         val clauses = mutableListOf<Clause>()
         input.skipType(Token.Type.EOS)
         do clauses += parseClause()
-        while (input.tryMatch(Token.Type.COMMA))
-        input.match(Token.Type.EOS)
+        while (!input.tryMatch(Token.Type.EOS))
+        println(input.peek().value)
+        input.skipType(Token.Type.EOS)
         return Sentence(clauses)
     }
 
     private fun parseClause(): Clause {
+        println(input.peek().value)
         for (rule in rules) tryRule(rule)?.let { return it }
+        println(input.peek().value)
         throw RuntimeException("No rule matched")
     }
 

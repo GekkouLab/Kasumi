@@ -1,81 +1,68 @@
 package gl.ky.kasumi.core
 
+import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 typealias TokenStream = List<Token>
 
-class Token(val type: TokenType, val value: String)
+data class Token(val type: TokenType, val value: String)
 
 class TokenType {
     companion object {
-        val NUMBER = TokenType()
-        val STRING = TokenType()
-        val PLAYER = TokenType()
-        val LOCATION = TokenType()
-        val LBRACE = TokenType() // {
-        val RBRACE = TokenType() // }
-        val LBRACKET = TokenType() // [
-        val RBRACKET = TokenType() // ]
-        val MARK = TokenType() // 无关紧要的标点
+        @JvmStatic val SKIP = TokenType()
     }
 }
 
-interface LexRule {
-    enum class Mode { FULL_MATCH, REGEX, ANY_OF }
-
-    fun match(input: String, start: Int): Token?
-
-    companion object {
-        val NUMBER = LexRule.of(TokenType.NUMBER, "\\d+", Mode.REGEX)
-        val STRING = LexRule.of(TokenType.STRING, "\"[^\"]*\"", Mode.REGEX)
-        val PLAYER = LexRule.of(TokenType.PLAYER, "@[a-zA-Z0-9_]+", Mode.REGEX)
-        val LOCATION = LexRule.of(TokenType.LOCATION, "\\[\\d+,\\d+,\\d+\\]", Mode.REGEX)
-
-        @JvmStatic
-        fun of(type: TokenType, pattern: Char, mode: Mode = Mode.FULL_MATCH) = OneChar(type, pattern)
-
-        @JvmStatic
-        fun of(type: TokenType, pattern: List<String>, mode: Mode = Mode.ANY_OF) = AnyOf(type, pattern)
-
-        @JvmStatic
-        fun of(type: TokenType, pattern: String, mode: Mode = Mode.FULL_MATCH): LexRule {
-            return when(mode) {
-                Mode.FULL_MATCH -> if (pattern.length != 1) FullMatch(type, pattern)
-                    else OneChar(type, pattern[0])
-                Mode.REGEX -> Regex(type, Pattern.compile(pattern))
-                Mode.ANY_OF -> AnyOf(type, pattern.split("|"))
-            }
-        }
+abstract class LexRule(val type: TokenType, val transformer: ((String) -> String)?) {
+    fun match(input: String, start: Int): Token? {
+        var s = capture(input, start)
+        s ?: return null
+        if(transformer != null) s = transformer.invoke(s)
+        return Token(type, s)
     }
 
-    class AnyOf(val type: TokenType, val patterns: List<String>) : LexRule {
-        override fun match(input: String, start: Int): Token? {
-            for(s in patterns) if(input.startsWith(s, start)) return Token(type, s)
+    abstract fun capture(input: String, start: Int): String?
+
+    companion object {
+        @JvmStatic fun fullMatch(type: TokenType, pattern: String, transformer: ((String) -> String)? = null)
+            = if(pattern.length == 1) OneChar(type, transformer, pattern[0]) else FullMatch(type, transformer, pattern)
+
+        @JvmStatic fun regex(type: TokenType, pattern: String, transformer: ((String) -> String)? = null)
+            = Regex(type, transformer, Pattern.compile(pattern))
+
+        @JvmStatic fun any(type: TokenType, pattern: List<String>, transformer: ((String) -> String)? = null)
+            = AnyOf(type, transformer, pattern)
+    }
+
+    class AnyOf(type: TokenType, transformer: ((String) -> String)?, val words: List<String>)
+        : LexRule(type, transformer) {
+        override fun capture(input: String, start: Int): String? {
+            for(s in words) if(input.startsWith(s, start)) return s
             return null
         }
     }
 
-    class OneChar(val type: TokenType, val c: Char) : LexRule {
-        override fun match(input: String, start: Int) =
-            if(input[start] == c) Token(type, c.toString()) else null
+    class OneChar(type: TokenType, transformer: ((String) -> String)?, val c: Char)
+        : LexRule(type, transformer) {
+        override fun capture(input: String, start: Int): String? = if(input[start] == c) c.toString() else null
     }
 
-    class FullMatch(val type: TokenType, val pattern: String) : LexRule {
-        override fun match(input: String, start: Int) =
-            if(input.startsWith(pattern, start)) Token(type, pattern) else null
+    class FullMatch(type: TokenType, transformer: ((String) -> String)?, val s: String)
+        : LexRule(type, transformer) {
+        override fun capture(input: String, start: Int): String? = if(input.startsWith(s, start)) s else null
     }
 
-    class Regex(val type: TokenType, val pattern: Pattern) : LexRule {
-        override fun match(input: String, start: Int): Token? {
-            val matcher = pattern.matcher(input)
-            return if (matcher.find(start) && matcher.start() == 0)
-                Token(type, matcher.group()) else null
+    class Regex(type: TokenType, transformer: ((String) -> String)?, pattern: Pattern) : LexRule(type, transformer) {
+        val matcher: Matcher = pattern.matcher("")
+        override fun capture(input: String, start: Int): String? {
+            matcher.reset(input)
+            return if (matcher.find(start) && matcher.start() == 0) matcher.group() else null
         }
     }
 }
 
 class Lexer(val rules: List<LexRule>) {
-    fun analyze(input: String): List<Token> {
+    fun lex(input: String): TokenStream {
         var offset = 0
         val tokens = mutableListOf<Token>()
         while (offset < input.length) {
@@ -84,9 +71,28 @@ class Lexer(val rules: List<LexRule>) {
                 result = rule.match(input, offset) ?: continue
             }
             if (result == null) throw RuntimeException("No rule matched")
-            tokens.add(result)
+            if(result.type != TokenType.SKIP) tokens.add(result)
             offset += result.value.length
         }
         return tokens
     }
+}
+
+object KasumiTokenTypes {
+    val SEGMENT = TokenType()
+
+    val STRING = TokenType()
+    val NUMBER = TokenType()
+    val PLAYER = TokenType()
+    val LOCATION = TokenType()
+
+    val LBRACE = TokenType()
+    val RBRACE = TokenType()
+    val LBRACKET = TokenType()
+    val RBRACKET = TokenType()
+    val LPAREN = TokenType()
+    val RPAREN = TokenType()
+    val MARK = TokenType() // 无关紧要的标点
+
+    val WORD = TokenType() // 自定义的，句子中语法性的词
 }
