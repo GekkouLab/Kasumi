@@ -6,6 +6,17 @@ interface ActionParser {
     fun parse(input: ParseState): AstNode.Action?
 }
 
+/**
+ * Parses a runtime transformer.
+ */
+interface TransformerParser {
+    fun parse(input: ParseState): ((KValue, Environment) -> KValue>)?
+}
+
+interface ConstModifier {
+    fun parse(input: ParseState, v: KValue): KValue?
+}
+
 class Parser(ap: List<ActionParser>) {
 
     fun parse(input: TokenStream) : AstNode.Module = parseModule(ParseState(input, 0))
