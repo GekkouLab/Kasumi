@@ -7,8 +7,8 @@ class Main : JavaPlugin() {
     override fun onEnable() {
         main = this
         log = logger
-        Metrics(this, 15335)
-        info("Plugin [Shisaku] has been enabled.")
+        Metrics(this, 15591)
+        log.info("Plugin [Kasumi] has been enabled.")
 
     }
 

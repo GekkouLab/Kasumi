@@ -1,4 +1,4 @@
-package gl.ky.kasumi.core
+package gl.ky.kasumi.c
 
 import java.util.regex.Matcher
 import java.util.regex.Pattern

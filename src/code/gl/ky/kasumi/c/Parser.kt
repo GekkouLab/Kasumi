@@ -1,6 +1,11 @@
-package gl.ky.kasumi.core
-/*
+package gl.ky.kasumi.c
+
 class ParseState(val tokens: TokenStream, val offset: Int)
+
+object ParseUtil {
+    fun ParseState.match(s: String) = this.tokens[offset].also { if(it.value != s) throw RuntimeException() }
+    fun ParseState.match(t: TokenType) =
+}
 
 interface ActionParser {
     fun parse(input: ParseState): AstNode.Action?
@@ -24,12 +29,13 @@ class Parser(ap: List<ActionParser>) {
     fun parseModule(state: ParseState): AstNode.Module {
         val segments = mutableMapOf<String, AstNode.Segment>()
         while (state.offset < state.tokens.size) {
-            segments += parseSegment(state)
+            val s = parseSegment(state)
+            segments += s.name to s
         }
         return AstNode.Module(segments)
     }
 
-    fun parseSegment(state: ParseState): Pair<String, AstNode.Segment> {
+    fun parseSegment(state: ParseState): AstNode.Segment {
         val sentences = mutableListOf<AstNode.Sentence>()
         state.match(KasumiTokenTypes.SEGMENT)
         nameT = state.match(KasumiTokenTypes.WORD)
@@ -37,8 +43,7 @@ class Parser(ap: List<ActionParser>) {
         while (state.offset < state.tokens.size) {
             sentences += parseSentence(state)
         }
-        return Pair(nameT.value, AstNode.Segment(sentences))
+        return AstNode.Segment(nameT, sentences)
     }
 
 }
-*/

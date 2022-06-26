@@ -1,4 +1,4 @@
-package gl.ky.kasumi.core
+package gl.ky.kasumi.c
 
 class Environment {
     // val moduleScope = mutableMapOf<String, KValue>()

@@ -1,4 +1,4 @@
-package gl.ky.kasumi.core
+package gl.ky.kasumi.c
 
 interface KValue {
     interface Converter<T> {
