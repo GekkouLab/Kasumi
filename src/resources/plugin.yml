@@ -1,6 +1,11 @@
-name: Kasumi
-main: gl.ky.kasumi.Main
-version: 1.0.0
-author: kouyoux
-description: use chinese to make nice effect
-load: STARTUP
+name: "Kasumi"
+main: "gl.ky.kasumi.Main"
+version: "beta-0.0.1"
+authors: [ "Takahashi Kouyou" ]
+description: "chinese script"
+website: "kasumi.ky.gl"
+load: "STARTUP"
+api-version: "1.16"
+commands:
+  kasumi:
+    usage: "kasumi"

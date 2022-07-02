@@ -9,7 +9,6 @@ class Main : JavaPlugin() {
         log = logger
         Metrics(this, 15591)
         log.info("Plugin [Kasumi] has been enabled.")
-
     }
 
     override fun onDisable() {
