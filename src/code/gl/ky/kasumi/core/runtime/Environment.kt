@@ -7,5 +7,7 @@ class KContext(val parent: KContext? = null) {
     val context = mutableMapOf<String, KValue>()
 
     fun get(key: String): KValue = context[key] ?: parent?.get(key) ?: KNull
-    fun set(key: String, value: KValue) { context[key] = value }
+    fun set(key: String, value: KValue) {
+        context[key] = value
+    }
 }

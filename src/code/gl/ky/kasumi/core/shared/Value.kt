@@ -2,20 +2,24 @@ package gl.ky.kasumi.core.shared
 
 interface KValue
 
-interface KPrimitive : KValue, Cloneable {
+interface KPrimitive: KValue, Cloneable {
+
     override fun clone(): KValue
 }
 
-class KNumber(val value: Int) : KPrimitive {
+class KNumber(val value: Int): KPrimitive {
+
     override fun clone(): KValue = KNumber(value)
 }
 
-class KString(val value: String) : KPrimitive {
+class KString(val value: String): KPrimitive {
+
     override fun clone(): KValue = KString(value)
 }
 
-class KBoolean private constructor(val value: Boolean) : KPrimitive {
+class KBoolean private constructor(val value: Boolean): KPrimitive {
     companion object {
+
         val TRUE = KBoolean(true)
         val FALSE = KBoolean(false)
     }
@@ -23,7 +27,8 @@ class KBoolean private constructor(val value: Boolean) : KPrimitive {
     override fun clone(): KValue = if (value) TRUE else FALSE
 }
 
-object KNull : KPrimitive {
+object KNull: KPrimitive {
+
     override fun clone(): KValue = KNull
 }
 
