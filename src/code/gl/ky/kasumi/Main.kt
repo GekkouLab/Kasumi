@@ -3,7 +3,7 @@ package gl.ky.kasumi
 import org.bstats.bukkit.Metrics
 import org.bukkit.plugin.java.JavaPlugin
 
-class Main: JavaPlugin() {
+class Main : JavaPlugin() {
     override fun onEnable() {
         main = this
         log = logger

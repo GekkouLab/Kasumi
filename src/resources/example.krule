@@ -1,0 +1,14 @@
+# kasumi rule engine example
+
+sentence $subject $verb $object
+
+mark 吗
+mark 呢
+mark 呀
+mark 吧
+mark
+
+action 示例 example:action
+
+
+
