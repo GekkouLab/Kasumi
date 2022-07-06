@@ -18,50 +18,50 @@ class ParseState(val tokens: TokenStream, var offset: Int = 0) {
 class Parser {
     fun parse(t: TokenStream) = parseModule(ParseState(t))
 
-    private fun parseModule(s: ParseState): Node.Module = with(s) {
-        val functions = arrayListOf<Node.Function>()
+    private fun parseModule(s: ParseState): KNode.Module = with(s) {
+        val functions = arrayListOf<KNode.Function>()
         while (hasNext()) {
             functions.add(parseFunction(this))
         }
-        return Node.Module(functions)
+        return KNode.Module(functions)
     }
 
-    private fun parseFunction(s: ParseState): Node.Function = with(s) {
+    private fun parseFunction(s: ParseState): KNode.Function = with(s) {
         val name = expect(KasumiTokenTypes.STRING).content
         val body = parseBlock(this)
-        Node.Function(name, body)
+        KNode.Function(name, body)
     }
 
-    private fun parseBlock(s: ParseState): Node.Block = with(s) {
+    private fun parseBlock(s: ParseState): KNode.Block = with(s) {
         expect(KasumiTokenTypes.COLON)
-        val statements = arrayListOf<Node.Statement>()
+        val statements = arrayListOf<KNode.Statement>()
         while (!test(KasumiTokenTypes.SEMICOLON)) {
             statements.add(parseStatement(this))
         }
         expect(KasumiTokenTypes.SEMICOLON)
-        Node.Block(statements)
+        KNode.Block(statements)
     }
 
-    private fun parseStatement(s: ParseState): Node.Statement = with(s) {
+    private fun parseStatement(s: ParseState): KNode.Statement = with(s) {
         when {
             test(KasumiTokenTypes.COLON) -> parseBlock(this)
             else -> throw RuntimeException()
         }
     }
 
-    private fun parseVarAssign(s: ParseState): Node.VarAssign = with(s) {
+    private fun parseVarAssign(s: ParseState): KNode.VarAssign = with(s) {
         expect(KasumiTokenTypes.VAR)
         val name = expect(KasumiTokenTypes.STRING).content
         expect(KasumiTokenTypes.AS)
         val value = parseExpression(this)
-        Node.VarAssign(name, value)
+        KNode.VarAssign(name, value)
     }
 
-    private fun parseCommand(s: ParseState): Node.Command = with(s) {
+    private fun parseCommand(s: ParseState): KNode.Command = with(s) {
         TODO()
     }
 
-    private fun parseExpression(s: ParseState): Node.Expression = with(s) {
+    private fun parseExpression(s: ParseState): KNode.Expression = with(s) {
         TODO()
     }
 
