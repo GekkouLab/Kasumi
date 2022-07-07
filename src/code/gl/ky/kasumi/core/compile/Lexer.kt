@@ -4,106 +4,75 @@ typealias TokenStream = List<Token>
 
 class Token(val type: TokenType, val content: String)
 
-class TokenType {
-    companion object {
-        @JvmStatic
-        val SKIP = TokenType()
+class TokenType
+
+class LexState(val input: String, var offset: Int) {
+    fun skip(n: Int = 1) {
+        offset += n
     }
 }
 
-abstract class LexRule private constructor(val type: TokenType, val transformer: ((String) -> String)?) {
+interface Lexer {
+    fun next(): Token?
+    fun expect(type: TokenType): Token
+    fun expect(content: String): Token
+}
+
+class KLexer(val matches: List<CaptureRule>, val skip: List<CaptureRule>, input: String, offset: Int = 0) : Lexer {
+    val state = LexState(input, offset)
+
+    class CaptureRule(val type: TokenType, val regex: Regex)
+
+    override fun next(): Token? {
+        val match = Companion.match(state, matches)
+        if(match != null) return match
+        Companion.skip(state, skip)
+        return Companion.match(state, matches)
+    }
+
+    override fun expect(type: TokenType): Token {
+        val rules = matches.filter { it.type == type }
+        val match = Companion.match(state, rules)
+        if(match != null) return match
+        Companion.skip(state, skip)
+        return Companion.match(state, rules) ?: throw RuntimeException("cant found $type")
+    }
+
+    override fun expect(content: String): Token {
+        if(state.input.startsWith(content, state.offset)) {
+            state.skip(content.length)
+            return Token(TokenType(), content)
+        }
+        Companion.skip(state, skip)
+        if(state.input.startsWith(content, state.offset)) {
+            state.skip(content.length)
+            return Token(TokenType(), content)
+        }
+        throw RuntimeException("cant found $content")
+    }
+
     companion object {
-        @JvmStatic
-        fun fullMatch(type: TokenType, pattern: String, transformer: ((String) -> String)? = null): LexRule =
-            if (pattern.length == 1) OneChar(type, transformer, pattern[0]) else FullMatch(type, transformer, pattern)
-
-        @JvmStatic
-        fun regex(type: TokenType, pattern: String, transformer: ((String) -> String)? = null): LexRule =
-            Regex(type, transformer, pattern)
-
-        @JvmStatic
-        fun any(type: TokenType, pattern: List<String>, transformer: ((String) -> String)? = null): LexRule =
-            AnyOf(type, transformer, pattern)
-    }
-
-    fun match(input: String, start: Int): Token? {
-        var s = capture(input, start)
-        s ?: return null
-        if (transformer != null) s = transformer.invoke(s)
-        return Token(type, s)
-    }
-
-    abstract fun capture(input: String, start: Int): String?
-
-    private class AnyOf(type: TokenType, transformer: ((String) -> String)?, val words: List<String>) :
-        LexRule(type, transformer) {
-        override fun capture(input: String, start: Int): String? {
-            for (s in words) if (input.startsWith(s, start)) return s
+        private fun match(state: LexState, rules: List<CaptureRule>): Token? {
+            for (rule in rules) {
+                val match = rule.regex.matchAt(state.input, state.offset)
+                if (match != null) {
+                    state.skip(match.value.length)
+                    return Token(rule.type, match.value)
+                }
+            }
             return null
         }
-    }
 
-    private class OneChar(type: TokenType, transformer: ((String) -> String)?, val c: Char) :
-        LexRule(type, transformer) {
-        override fun capture(input: String, start: Int): String? = if (input[start] == c) c.toString() else null
-    }
-
-    private class FullMatch(type: TokenType, transformer: ((String) -> String)?, val s: String) :
-        LexRule(type, transformer) {
-        override fun capture(input: String, start: Int): String? = if (input.startsWith(s, start)) s else null
-    }
-
-    private class Regex(type: TokenType, transformer: ((String) -> String)?, re: String) : LexRule(type, transformer) {
-        val regex = re.toRegex()
-        override fun capture(input: String, start: Int): String? {
-            return regex.matchAt(input, start)?.value
-        }
-    }
-}
-
-class Lexer(val rules: List<LexRule>) {
-    fun lex(input: String): TokenStream {
-        var offset = 0
-        val tokens = mutableListOf<Token>()
-        while (offset < input.length) {
-            var result: Token? = null
+        private fun skip(state: LexState, rules: List<CaptureRule>): Boolean {
             for (rule in rules) {
-                result = rule.match(input, offset) ?: continue
+                val match = rule.regex.matchAt(state.input, state.offset)
+                if (match != null) {
+                    state.skip(match.value.length)
+                    return true
+                }
             }
-            if (result == null) throw RuntimeException("No rule matched")
-            if (result.type != TokenType.SKIP) tokens.add(result)
-            offset += result.content.length
+            return false
         }
-        return tokens
-    }
-}
-
-class NewLexer(val matches: List<LexRule>, val skip: List<LexRule>, val input: String, var offset: Int = 0) {
-    private val mapped = mutableMapOf<TokenType, MutableList<LexRule>>().also {
-        for (rule in matches) {
-            it.getOrPut(rule.type) { mutableListOf() }.add(rule)
-        }
-    }
-
-    private fun skip() {
-        a@ while (offset < input.length) {
-            for (rule in skip) {
-                val result = rule.match(input, offset) ?: continue@a
-                offset += result.content.length
-            }
-        }
-    }
-
-    fun next(type: TokenType): Token? {
-        return next(mapped[type] ?: return null)
-    }
-
-    fun next(rules: List<LexRule>): Token? {
-        skip()
-        for (rule in rules) {
-            return rule.match(input, offset) ?: continue
-        }
-        return null
     }
 
 }
